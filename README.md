@@ -41,9 +41,9 @@ PUSH (REG)                      |  (REG)  -> (--SP)      |  0x4    |
 POP (REG)                       |  (SP++) -> (REG)       |  0x5    |
 ST (IMM/REGPTR) (REG)           |  (REG)  -> (MEM)       |  0x6    |
 LD (REG) (IMM/REGPTR)           |  (MEM)  -> (REG)       |  0x7    |
-OR (R1) (R2) -> (R1)            |  (R1) | (R2) -> (R1)   |  0x8    |
-AND (R1) (R2) -> (R1)           |  (R1) & (R2) -> (R1)   |  0x9    |
-XOR (R1) (R2) -> (R1)           |  (R1) ^ (R2) -> (R1)   |  0xA    |
+OR  (R1) (R2) -> (R1)           |  (R1) | (R2)  -> (R1)  |  0x8    |
+AND (R1) (R2) -> (R1)           |  (R1) & (R2)  -> (R1)  |  0x9    |
+XOR (R1) (R2) -> (R1)           |  (R1) ^ (R2)  -> (R1)  |  0xA    |
 LSH (R1) (R2) -> (R1)           |  (R1) << (R2) -> (R1)  |  0xB    |
 RSH (R1) (R2) -> (R1)           |  (R1) >> (R2) -> (R1)  |  0xC    |
 CLI                             |  FLAGS &= (~I)         |  0xD    |
