@@ -1,5 +1,5 @@
-CFLAGS := -MMD -std=gnu99
-CXXFLAGS := $(CFLAGS) -std=c++23 -g -fPIC
+CFLAGS := -MMD -std=gnu99 -O2
+CXXFLAGS := $(CFLAGS) -std=c++23 -O2
 LDFLAGS := -lm -lglm -lglfw -shared
 
 INCLUDE_DIRS := -Iinclude
@@ -48,3 +48,4 @@ $(OBJ): Makefile
 
 print-%:
 	@echo $* = $($*)
+
