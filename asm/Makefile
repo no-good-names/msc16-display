@@ -37,8 +37,8 @@ gperf.out: asm_keywords.gperf
 	@$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 %.o: %.c
-	@echo "  cpp     $@"
-	@$(cpp) $(CFLAGS) -c -o $@ $<
+	@echo "  CC     $@"
+	@$(CC) $(CFLAGS) -c -o $@ $<
 
 .PHONY: clean
 clean:

@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #pragma once
 
-#include "common.hh"
+#include "common.hpp"
 
 #define INST_CMP 0x0
 #define INST_ADD 0x1

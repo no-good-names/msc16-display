@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include <getopt.h>
-#include "common.hh"
-#include "asm.hh"
+#include "common.hpp"
+#include "asm.hpp"
 
 static string read_file(const string &if_name)
 {

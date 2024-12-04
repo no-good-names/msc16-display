@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include <any>
-#include "common.hh"
-#include "asm.hh"
+#include "common.hpp"
+#include "asm.hpp"
 #include "hash.h"
 
 struct instruction;
