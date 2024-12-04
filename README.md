@@ -70,13 +70,15 @@ All instructions are of 16-bit length, stored in memory in little-endian format
 
 After reading from memory, we decode the instruction into the following format:
 
-`AAAA RRRR BBCC MRRR`
+```
+AAAA RRRR BBCC MRRR
 
 A: Instruction
 B: R1
 C: R2
 M: Mode (1 for immediate)
 R: Reserved
+```
 
 In the case of an immediate value, the immediate value is stored in the next
 two bytes of memory, again in little-endian format. Due to the way the opcode
