@@ -138,7 +138,7 @@ static instruction tokenize_line(const string &line, size_t line_no)
 	return ret;
 }
 
-static void decode(instruction &ins)
+static void inst_parse(instruction &ins)
 {
 	token t0 = ins.tokens[0];
 
@@ -196,7 +196,7 @@ string assemble(const string &src)
 	}
 
 	for (instruction &ins : instrs)
-		decode(ins);
+		inst_parse(ins);
 
 	return buf;
 }
