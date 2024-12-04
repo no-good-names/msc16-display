@@ -5,3 +5,5 @@ chmess
 .cache
 *.bin
 *.so
+asm_image
+gperf.out
