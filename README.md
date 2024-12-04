@@ -2,6 +2,22 @@
 
 A simple 16-bit architecture, with an emulator
 
+## Motivation
+
+N/A
+
+## Building
+
+You can build the packages individually by invoking `make` in their directories.
+
+The following are required to build all packages:
+
+```
+make
+gcc
+gperf
+```
+
 # MSC-16 Chip Spec
 
 ## Registers
