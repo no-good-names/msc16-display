@@ -52,7 +52,10 @@ int main(int argc, char *argv[])
 
 	string buf = read_file(if_name);
 
-	assemble(buf);
+	string ret = assemble(buf);
+
+	ofstream ofile(of_name);
+	ofile << ret;
 
 	return 0;
 }

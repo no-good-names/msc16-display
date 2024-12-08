@@ -4,6 +4,7 @@ compile_commands.json
 chmess
 .cache
 *.bin
+*.bin
 *.so
 asm_image
 gperf.out
