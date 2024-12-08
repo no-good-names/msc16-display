@@ -61,7 +61,7 @@ u16 inst_pop(cpu_t *cpu, busptr_t *r1)
 u16 inst_st_ld(cpu_t *cpu, busptr_t *r1, busptr_t *r2)
 {
 	u16 t1 = cpu_bus_read(cpu, r1);
-	cpu_bus_write(cpu, r2, t1);
+	cpu_bus_write(cpu, r1, t1);
 	return t1;
 }
 
