@@ -1,6 +1,8 @@
-CFLAGS := -MMD -std=gnu99
+CFLAGS := -MMD 
 CXXFLAGS := $(CFLAGS) -std=c++23 -g
 LDFLAGS := -lm -lglm -lglfw
+
+CFLAGS += -std=gnu99
 
 INCLUDE_DIRS := -Iinclude
 
