@@ -1,5 +1,5 @@
-CFLAGS := -MMD 
-CXXFLAGS := $(CFLAGS) -std=c++23 -g
+CFLAGS := -MMD -g
+CXXFLAGS := $(CFLAGS) -std=c++23
 LDFLAGS := -lm -lglm -lglfw
 
 CFLAGS += -std=gnu99

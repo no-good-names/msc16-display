@@ -8,6 +8,11 @@
 
 #define LOWER_BYTE(x) ((x) & 0xFF)
 #define UPPER_BYTE(x) (((x) >> 8) & 0xFF)
+#define WRITE_STREAM(x, index)                     \
+	do {                                       \
+		stream[index] = LOWER_BYTE(x);     \
+		stream[index + 1] = UPPER_BYTE(x); \
+	} while (0)
 
 struct instruction;
 struct token {
@@ -133,32 +138,30 @@ static instruction tokenize_line(const string &line, size_t line_no)
 
 static void resolve_label(const string &label)
 {
-	auto it = unresolved_labels.find(label);
-	if (it == unresolved_labels.end())
+	if (!labels.contains(label)) {
+		cerr << "Error: Label not found: " << label << endl;
+		return;
+	}
+
+	if (!unresolved_labels.contains(label))
 		return;
 
-	if (!labels.count(label))
-		return;
+	for (size_t ref_ptr : unresolved_labels[label]) {
+		size_t ptr = labels[label];
 
-	size_t ptr = labels[label];
-	for (size_t ref_ptr : it->second) {
-		stream[ref_ptr] = LOWER_BYTE(ptr);
-		stream[ref_ptr + 1] = UPPER_BYTE(ptr);
+		WRITE_STREAM(ptr, ref_ptr);
 	}
 }
 
 static void attempt_resolve_label(const string &label, size_t ref_ptr)
 {
-	auto it = labels.find(label);
-	if (it == labels.end()) {
+	if (!labels.contains(label)) {
 		/* Mark as unresolved */
 		unresolved_labels[label].push_back(ref_ptr);
 	} else {
 		/* Found */
-		size_t ptr = it->second;
-
-		stream[ref_ptr] = LOWER_BYTE(ptr);
-		stream[ref_ptr + 1] = UPPER_BYTE(ptr);
+		size_t ptr = labels[label];
+		WRITE_STREAM(ptr, ref_ptr);
 	}
 }
 
@@ -210,8 +213,8 @@ static void parse_instruction_arith(instruction &ins)
 	ins.opcode |= (parse_register(r1) & 0x3) << 6;
 	ins.opcode |= (parse_register(r2) & 0x3) << 4;
 
-	stream[cur_index] = ins.opcode;
-	cur_index++;
+	WRITE_STREAM(ins.opcode, cur_index);
+	cur_index += 2;
 }
 
 static void parse_instruction_ld(instruction &ins)
@@ -244,15 +247,14 @@ static void parse_instruction_ld(instruction &ins)
 	ins.opcode |= INST_LD << 12;
 
 	if (ins.opcode & ADMODE_IMM) {
-		stream[cur_index + 1] = LOWER_BYTE(opt_val);
-		stream[cur_index + 2] = UPPER_BYTE(opt_val);
-		cur_index += 2;
+		WRITE_STREAM(ins.opcode, cur_index);
+		WRITE_STREAM(opt_val, cur_index + 2);
+		cur_index += 4;
 	} else {
 		ins.opcode |= (opt_val) << 4;
+		WRITE_STREAM(ins.opcode, cur_index);
+		cur_index += 2;
 	}
-
-	stream[cur_index] = ins.opcode;
-	cur_index++;
 }
 
 static void parse_instruction_st(instruction &ins)
@@ -285,15 +287,14 @@ static void parse_instruction_st(instruction &ins)
 	ins.opcode |= INST_LD << 12;
 
 	if (ins.opcode & ADMODE_IMM) {
-		stream[cur_index + 1] = LOWER_BYTE(opt_val);
-		stream[cur_index + 2] = UPPER_BYTE(opt_val);
-		cur_index += 2;
+		WRITE_STREAM(ins.opcode, cur_index);
+		WRITE_STREAM(opt_val, cur_index + 2);
+		cur_index += 4;
 	} else {
 		ins.opcode |= (opt_val) << 6;
+		WRITE_STREAM(ins.opcode, cur_index);
+		cur_index += 2;
 	}
-
-	stream[cur_index] = ins.opcode;
-	cur_index++;
 }
 
 static void parse_inst_push_pop(instruction &ins)
@@ -309,8 +310,8 @@ static void parse_inst_push_pop(instruction &ins)
 	ins.opcode <<= 12;
 	ins.opcode |= r1_result << 6;
 
-	stream[cur_index] = ins.opcode;
-	cur_index++;
+	WRITE_STREAM(ins.opcode, cur_index);
+	cur_index += 2;
 }
 
 static void parse_inst_jnz(instruction &ins)
@@ -329,27 +330,26 @@ static void parse_inst_jnz(instruction &ins)
 	ins.opcode |= result;
 
 	if (result == 4) {
-		attempt_resolve_label(t1.str, cur_index + 1);
 		ins.opcode |= ADMODE_IMM;
-		cur_index += 2;
+		WRITE_STREAM(ins.opcode, cur_index);
+		attempt_resolve_label(t1.str, cur_index + 2);
+		cur_index += 4;
 	} else if (result == ADMODE_IMM) {
-		stream[cur_index + 1] = LOWER_BYTE(val);
-		stream[cur_index + 2] = UPPER_BYTE(val);
+		WRITE_STREAM(ins.opcode, cur_index);
+		WRITE_STREAM(val, cur_index + 2);
 
 		ins.opcode |= ADMODE_IMM;
 		cur_index += 2;
 	} else {
 		ins.opcode |= val << 6;
+		WRITE_STREAM(ins.opcode, cur_index);
+		cur_index += 2;
 	}
-
-	stream[cur_index] = ins.opcode;
-	cur_index++;
 }
 
 static void parse_inst_cli_sti(instruction &ins)
 {
 	ins.opcode <<= 12;
-	stream[cur_index] = ins.opcode;
 }
 
 static void parse_inst_int(instruction &ins)
@@ -367,9 +367,12 @@ static void parse_inst_int(instruction &ins)
 	ins.opcode = INST_INT << 12;
 	ins.opcode |= ADMODE_IMM;
 
-	stream[cur_index] = ins.opcode;
-	stream[cur_index + 1] = LOWER_BYTE(val);
-	stream[cur_index + 2] = UPPER_BYTE(val);
+	stream[cur_index] = LOWER_BYTE(ins.opcode);
+	stream[cur_index + 1] = UPPER_BYTE(ins.opcode);
+	stream[cur_index + 2] = LOWER_BYTE(val);
+	stream[cur_index + 3] = UPPER_BYTE(val);
+
+	cur_index += 4;
 }
 
 static void inst_parse(instruction &ins)
@@ -452,6 +455,9 @@ string assemble(const string &src)
 
 	ss.clear();
 
+	/* just a guess */
+	stream.resize(src.size() * 2);
+
 	for (size_t i = 0; i < lines.size(); i++) {
 		instruction ins = tokenize_line(lines[i], i + 1);
 		if (ins.tokens.empty())
@@ -459,7 +465,7 @@ string assemble(const string &src)
 
 		if (ins.tokens[0].type == token::LABEL) {
 			string label = ins.tokens[0].str.substr(0, ins.tokens[0].str.size() - 1);
-			if (labels.find(label) != labels.end()) {
+			if (labels.contains(label)) {
 				cerr << "Error on line " << ins.tokens[0].line_no << ": Duplicate label: " << label << endl;
 				continue;
 			}
@@ -469,15 +475,10 @@ string assemble(const string &src)
 		}
 
 		instrs.push_back(ins);
-	}
-
-	for (instruction &ins : instrs)
 		inst_parse(ins);
-
-	string ret;
-	for (int i = 0; i < stream.size(); i++) {
-		ret += stream[i];
 	}
 
-	return ret;
+	stream.resize(cur_index);
+
+	return string(stream.begin(), stream.end());
 }

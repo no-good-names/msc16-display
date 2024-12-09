@@ -43,8 +43,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (if_name.empty()) {
-		cerr << "Error: input file not specified\n";
-		return 1;
+		if_name = "test.s";
 	}
 
 	if (of_name.empty())
