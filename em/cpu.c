@@ -88,8 +88,8 @@ u16 inst_int(cpu_t *cpu, busptr_t *r1, busptr_t *r2)
 void cpu_advance(cpu_t *cpu)
 {
 	static const int n_inst = 16;
-	static void *inst_select[n_inst] = { inst_cmp, inst_add, inst_sub, inst_jnz, inst_push, inst_pop, inst_st_ld, inst_st_ld,
-					     inst_or,  inst_and, inst_xor, inst_lsh, inst_rsh,	inst_cli, inst_sti,   inst_int };
+	static void *inst_select[] = { inst_cmp, inst_add, inst_sub, inst_jnz, inst_push, inst_pop, inst_st_ld, inst_st_ld,
+				       inst_or,	 inst_and, inst_xor, inst_lsh, inst_rsh,  inst_cli, inst_sti,	inst_int };
 
 	u16 ip = cpu->ip;
 	busptr_t r1 = { .reg_mem_addr = ip, .type = BUS_MEM };
