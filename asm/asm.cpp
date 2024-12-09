@@ -327,7 +327,8 @@ static void parse_inst_jnz(instruction &ins)
 	}
 
 	ins.opcode = INST_JNZ << 12;
-	ins.opcode |= (result) & 0x8;
+	/* either of these bits will result in ADMODE_IMM */
+	ins.opcode |= (result) & 0x8 | ((result & 0x4) << 1);
 
 	if (result == 4) {
 		WRITE_STREAM(ins.opcode, cur_index);
@@ -347,7 +348,8 @@ static void parse_inst_jnz(instruction &ins)
 
 static void parse_inst_cli_sti(instruction &ins)
 {
-	ins.opcode <<= 12;
+	WRITE_STREAM(ins.opcode, cur_index);
+	cur_index += 2;
 }
 
 static void parse_inst_int(instruction &ins)
