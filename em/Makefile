@@ -16,7 +16,7 @@ CSRC := $(shell find . -type f -name '*.c')
 OBJ := $(CSRC:.c=.o)
 DEP := $(OBJ:.o=.d)
 
-TARGET := em
+TARGET := em.bin
 
 all: $(TARGET)
 
