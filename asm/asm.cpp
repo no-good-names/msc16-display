@@ -327,10 +327,9 @@ static void parse_inst_jnz(instruction &ins)
 	}
 
 	ins.opcode = INST_JNZ << 12;
-	ins.opcode |= result;
+	ins.opcode |= (result) & 0x8;
 
 	if (result == 4) {
-		ins.opcode |= ADMODE_IMM;
 		WRITE_STREAM(ins.opcode, cur_index);
 		attempt_resolve_label(t1.str, cur_index + 2);
 		cur_index += 4;
@@ -338,7 +337,6 @@ static void parse_inst_jnz(instruction &ins)
 		WRITE_STREAM(ins.opcode, cur_index);
 		WRITE_STREAM(val, cur_index + 2);
 
-		ins.opcode |= ADMODE_IMM;
 		cur_index += 2;
 	} else {
 		ins.opcode |= val << 6;

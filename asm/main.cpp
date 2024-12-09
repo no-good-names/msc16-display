@@ -42,9 +42,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (if_name.empty()) {
+	if (if_name.empty())
 		if_name = "test.s";
-	}
 
 	if (of_name.empty())
 		of_name = "out.bin";
