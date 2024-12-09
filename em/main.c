@@ -1,4 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
+/* MSC-16 CPU emulator executable
+*
+* Uses the MSC-16 bus interface to advance the CPU
+* This is for testing purposes only
+*/
 #include <stdio.h>
 #include <unistd.h>
 #include "bus.h"
