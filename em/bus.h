@@ -19,6 +19,7 @@ typedef struct _busptr {
 
 u16 cpu_bus_read(cpu_t *cpu, busptr_t *ptr);
 void cpu_bus_write(cpu_t *cpu, busptr_t *ptr, u16 value);
+void cpu_advance(cpu_t *cpu);
+void cpu_init(cpu_t *cpu);
 
 #endif /* _BUS_H_ */
-

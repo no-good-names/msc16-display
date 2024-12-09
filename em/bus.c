@@ -6,7 +6,8 @@ u16 cpu_bus_read(cpu_t *cpu, busptr_t *ptr)
 {
 	if (ptr->type == BUS_MEM) {
 		u8 *mem = (u8 *)&cpu->memory[ptr->reg_mem_addr];
-		return mem[0] | ((u16)mem[1] << 8);
+		u16 ret = mem[0] | (mem[1] << 8);
+		return ret;
 	} else {
 		return CPU_REG_READ(cpu, ptr->reg_mem_addr);
 	}

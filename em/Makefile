@@ -1,6 +1,5 @@
-CFLAGS := -MMD -std=gnu99 -O2
-CXXFLAGS := $(CFLAGS) -std=c++23 -O2
-LDFLAGS := -lm -lglm -lglfw -shared
+CFLAGS := -MMD -std=gnu99 -O2 -g
+LDFLAGS := -lm -lglm -lglfw 
 
 INCLUDE_DIRS := -Iinclude
 
@@ -12,24 +11,18 @@ else
 endif
 
 CFLAGS += $(INCLUDE_DIRS)
-CXXFLAGS += $(INCLUDE_DIRS)
 
 CSRC := $(shell find . -type f -name '*.c')
-CXXSRC := $(shell find . -type f -name '*.cc')
-OBJ := $(CXXSRC:.cc=.o) $(CSRC:.c=.o)
+OBJ := $(CSRC:.c=.o)
 DEP := $(OBJ:.o=.d)
 
-TARGET := libmsc16.so
+TARGET := em
 
 all: $(TARGET)
 
 $(TARGET): $(OBJ)
 	@echo "  LD     $@"
-	@$(CXX) -o $@ $^ $(LDFLAGS)
-
-%.o: %.cc
-	@echo "  CXX    $@"
-	@$(CXX) $(CXXFLAGS) -c -o $@ $<
+	@$(CC) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c
 	@echo "  CC     $@"

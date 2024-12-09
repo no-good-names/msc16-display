@@ -56,6 +56,4 @@ typedef struct cpu {
 	u8 memory[0x10000];
 } cpu_t;
 
-void cpu_advance(cpu_t *cpu);
-
 #endif /* _OPCODES_H_ */

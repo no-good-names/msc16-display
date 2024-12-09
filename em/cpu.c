@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
+#include <stdio.h>
 #include "opcodes.h"
 #include "bus.h"
 
@@ -7,15 +8,16 @@
 #define OPC_R1(opc) ((opc >> 6) & 0x3)
 #define OPC_R2(opc) ((opc >> 4) & 0x3)
 
-#define GEN_ARITH_INST(name, op, write)                         \
-	u16 inst_##name(cpu_t *cpu, busptr_t *r1, busptr_t *r2) \
-	{                                                       \
-		u16 t1 = cpu_bus_read(cpu, r1);                 \
-		u16 t2 = cpu_bus_read(cpu, r2);                 \
-		u16 result = t1 op t2;                          \
-		if (likely(write))                              \
-			cpu_bus_write(cpu, r1, result);         \
-		return result;                                  \
+#define GEN_ARITH_INST(name, op, write)                                                             \
+	u16 inst_##name(cpu_t *cpu, busptr_t *r1, busptr_t *r2)                                     \
+	{                                                                                           \
+		printf(#name " %c %c\n", 'A' + cpu_bus_read(cpu, r1), 'A' + cpu_bus_read(cpu, r2)); \
+		u16 t1 = cpu_bus_read(cpu, r1);                                                     \
+		u16 t2 = cpu_bus_read(cpu, r2);                                                     \
+		u16 result = t1 op t2;                                                              \
+		if (likely(write))                                                                  \
+			cpu_bus_write(cpu, r1, result);                                             \
+		return result;                                                                      \
 	}
 
 GEN_ARITH_INST(add, +, 1);
@@ -29,6 +31,7 @@ GEN_ARITH_INST(rsh, >>, 1);
 
 u16 inst_jnz(cpu_t *cpu, busptr_t *r1, busptr_t *r2)
 {
+	printf("jnz %d\n", cpu_bus_read(cpu, r1));
 	if (!TEST_FLAG(cpu, FLAG_Z)) {
 		cpu->ip = cpu_bus_read(cpu, r1);
 	}
@@ -38,6 +41,7 @@ u16 inst_jnz(cpu_t *cpu, busptr_t *r1, busptr_t *r2)
 
 u16 inst_push(cpu_t *cpu, busptr_t *r1)
 {
+	printf("push %c\n", 'a' + cpu_bus_read(cpu, r1));
 	cpu->sp -= 2;
 	u16 rval = cpu_bus_read(cpu, r1);
 
@@ -49,6 +53,7 @@ u16 inst_push(cpu_t *cpu, busptr_t *r1)
 
 u16 inst_pop(cpu_t *cpu, busptr_t *r1)
 {
+	printf("pop %c\n", 'a' + cpu_bus_read(cpu, r1));
 	busptr_t sp = { .reg_mem_addr = cpu->sp, .type = BUS_MEM };
 	u16 val = cpu_bus_read(cpu, &sp);
 	cpu_bus_write(cpu, r1, val);
@@ -60,25 +65,29 @@ u16 inst_pop(cpu_t *cpu, busptr_t *r1)
 
 u16 inst_st_ld(cpu_t *cpu, busptr_t *r1, busptr_t *r2)
 {
-	u16 t1 = cpu_bus_read(cpu, r1);
+	printf("st/ld %4x %4x\n", cpu_bus_read(cpu, r1), cpu_bus_read(cpu, r2));
+	u16 t1 = cpu_bus_read(cpu, r2);
 	cpu_bus_write(cpu, r1, t1);
 	return t1;
 }
 
 u16 inst_cli(cpu_t *cpu)
 {
+	printf("cli\n");
 	CLEAR_FLAG(cpu, FLAG_I);
 	return 0;
 }
 
 u16 inst_sti(cpu_t *cpu)
 {
+	printf("sti\n");
 	SET_FLAG(cpu, FLAG_I);
 	return 0;
 }
 
 u16 inst_int(cpu_t *cpu, busptr_t *r1, busptr_t *r2)
 {
+	printf("int %d\n", cpu_bus_read(cpu, r1));
 	if (TEST_FLAG(cpu, FLAG_I))
 		cpu->ip = cpu_bus_read(cpu, r1);
 
@@ -96,10 +105,10 @@ void cpu_advance(cpu_t *cpu)
 	busptr_t r2;
 
 	u16 opcode = cpu_bus_read(cpu, &r1);
-	u16 inst = opcode >>= 12;
-	u16 admode = (opcode >> 3) & 0x1;
+	u16 inst = opcode >> 12;
+	u16 admode = (opcode & 0x8) >> 3;
 
-	if (opcode >= n_inst) {
+	if (inst >= n_inst) {
 		IP_ADVANCE(cpu, 1);
 		return;
 	}
@@ -127,7 +136,6 @@ void cpu_advance(cpu_t *cpu)
 	case INST_JNZ:
 		if (admode) {
 			r1.reg_mem_addr = ip + 2;
-			IP_ADVANCE(cpu, 2);
 			r1.type = BUS_MEM;
 		} else {
 			r1.reg_mem_addr = OPC_R1(opcode);
@@ -171,6 +179,8 @@ void cpu_advance(cpu_t *cpu)
 	}
 
 	u16 (*inst_func)(cpu_t *, busptr_t *, busptr_t *) = inst_select[inst];
+	printf("ip: %4x opcode: %4x: ", ip, opcode);
+	u16 ip_cur = cpu->ip;
 	u16 result = inst_func(cpu, &r1, &r2);
 
 	INVALIDATE_FLAGS(cpu);
@@ -180,5 +190,18 @@ void cpu_advance(cpu_t *cpu)
 	if (result & 0x8000)
 		SET_FLAG(cpu, FLAG_N);
 
-	IP_ADVANCE(cpu, 2);
+	if (cpu->ip == ip_cur) {
+		if (admode) {
+			IP_ADVANCE(cpu, 2);
+		}
+
+		IP_ADVANCE(cpu, 2);
+	}
+}
+
+void cpu_init(cpu_t *cpu)
+{
+	cpu->ip = 0;
+	cpu->sp = 0x1000;
+	cpu->flags = 0;
 }
