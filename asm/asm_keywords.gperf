@@ -1,18 +1,21 @@
-struct keyword { char *name; int opc; int n_args; int arg_fmt; };
+struct keyword { char *name; int opc; int n_args; };
 %%
-cmp,  0x0, 2, KW_R1_REG | KW_R2_REG
-add,  0x1, 2, KW_R1_REG | KW_R2_REG 
-sub,  0x2, 2, KW_R1_REG | KW_R2_REG 
-jnz,  0x3, 1, KW_R1_REG | KW_R2_REG 
-push, 0x4, 1, KW_R1_REG
-pop,  0x5, 1, KW_R1_REG
-st,   0x6, 2, KW_R1_REG | KW_R1_IMM | KW_R2_REG
-ld,   0x7, 2, KW_R1_REG | KW_R2_REG | KW_R2_IMM
-or,   0x8, 2, KW_R1_REG | KW_R2_REG 
-and,  0x9, 2, KW_R1_REG | KW_R2_REG 
-xor,  0xa, 2, KW_R1_REG | KW_R2_REG 
-lsh,  0xb, 2, KW_R1_REG | KW_R2_REG 
-rsh,  0xc, 2, KW_R1_REG | KW_R2_REG 
-cli,  0xd, 0, 0
-sti,  0xe, 0, 0
-int,  0xf, 1, KW_R1_IMM
+cmp,	  0x0,  2
+add,  	  0x1,  2
+sub,  	  0x2,  2
+jnz,  	  0x3,  1
+push, 	  0x4,  1
+pop,  	  0x5,  1
+st,   	  0x6,  2
+ld,   	  0x7,  2
+or,   	  0x8,  2
+and,  	  0x9,  2
+xor,  	  0xa,  2
+lsh,  	  0xb,  2
+rsh,  	  0xc,  2
+cli,  	  0xd,  0
+sti,  	  0xe,  0
+int,  	  0xf,  1
+.string,  0x10, 1
+.zstring, 0x11, 1
+.org,	  0x12, 1

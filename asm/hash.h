@@ -17,7 +17,6 @@ struct keyword {
 	const char *name;
 	int opc;
 	int n_args;
-	int arg_fmt;
 };
 #endif /* GPERF_IMPL */
 

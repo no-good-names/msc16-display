@@ -23,6 +23,7 @@ struct token {
 		REG,
 		LABEL,
 		LABEL_REF,
+		STRING,
 	} type;
 
 	string str;
@@ -51,6 +52,7 @@ static unordered_map<string, vector<size_t> > unresolved_labels;
 
 static vector<unsigned char> stream;
 static size_t cur_index = 0;
+static size_t n_errors = 0;
 
 static string token_types[] = {
 	"OPC", "IMM_DEC", "IMM_HEX", "REG", "LABEL", "LABEL_REF",
@@ -68,6 +70,8 @@ static enum token::type get_token_type(const string &token_s)
 		return token::LABEL;
 	else if (asm_keyword_lookup(token_s.c_str(), token_s.size()))
 		return token::OPC;
+	else if (token_s[0] == '"' && token_s.back() == '"')
+		return token::STRING;
 	else
 		return token::LABEL_REF;
 }
@@ -85,21 +89,36 @@ static vector<string> tokenize_line_s(const string &line)
 		return false;
 	};
 
+	bool is_escape = false;
+	bool quote_open = false;
+	string cur_token;
 	for (size_t i = 0; i < line.size(); i++) {
-		if (is_separator(line[i]))
+		char c = line[i];
+		bool quote_end = false;
+		if (c == '\\' && !is_escape) {
+			is_escape = true;
 			continue;
-		if (line[i] == '#')
-			break;
+		}
 
-		size_t j = i;
-		while (j < line.size() && !is_separator(line[j]))
-			j++;
+		if (c == '"' && !is_escape) {
+			quote_end = quote_open;
+			quote_open = !quote_open;
+		}
 
-		size_t sub_len = j - i;
+		if (is_separator(c) && !quote_open) {
+			if (!cur_token.empty())
+				tokens_s.push_back(cur_token);
 
-		tokens_s.push_back(line.substr(i, sub_len));
+			cur_token.clear();
+		} else {
+			cur_token.push_back(c);
+			is_escape = false;
+		}
+	}
 
-		i = j;
+	if (quote_open) {
+		cerr << "Error: Unclosed quote" << endl;
+		n_errors++;
 	}
 
 	return tokens_s;
@@ -140,6 +159,7 @@ static void resolve_label(const string &label)
 {
 	if (!labels.contains(label)) {
 		cerr << "Error: Label not found: " << label << endl;
+		n_errors++;
 		return;
 	}
 
@@ -171,12 +191,14 @@ static int parse_register(const string &reg)
 	r1 = tolower(r1);
 	if (reg.size() != 2) {
 		cerr << "Invalid register: " << reg << endl;
+		n_errors++;
 		return -1;
 	}
 
 	char r = r1;
 	if (r < 'a' || r > 'd') {
 		cerr << "Invalid register: " << reg << endl;
+		n_errors++;
 		return -1;
 	}
 
@@ -232,6 +254,7 @@ static void parse_instruction_ld(instruction &ins)
 
 	if (opt_result == -1 || rx_result == -1) {
 		cerr << "Error on line " << t1.line_no << ": Invalid register/imm: " << t1.str << " or " << t2.str << endl;
+		n_errors++;
 		return;
 	}
 
@@ -272,6 +295,7 @@ static void parse_instruction_st(instruction &ins)
 
 	if (opt_result == -1 || rx_result == -1) {
 		cerr << "Error on line " << t1.line_no << ": Invalid register/imm: " << t1.str << " or " << t2.str << endl;
+		n_errors++;
 		return;
 	}
 
@@ -304,6 +328,7 @@ static void parse_inst_push_pop(instruction &ins)
 	int r1_result = parse_register(t1.str);
 	if (r1_result == -1) {
 		cerr << "Error on line " << t1.line_no << ": Invalid register: " << t1.str << endl;
+		n_errors++;
 		return;
 	}
 
@@ -323,6 +348,7 @@ static void parse_inst_jnz(instruction &ins)
 
 	if (result == -1) {
 		cerr << "Error on line " << t1.line_no << ": Invalid register/imm: " << t1.str << endl;
+		n_errors++;
 		return;
 	}
 
@@ -361,6 +387,7 @@ static void parse_inst_int(instruction &ins)
 
 	if (result == 4 || result == ADMODE_REG) {
 		cerr << "Error on line " << t1.line_no << ": Invalid imm: " << t1.str << endl;
+		n_errors++;
 		return;
 	}
 
@@ -373,6 +400,37 @@ static void parse_inst_int(instruction &ins)
 	stream[cur_index + 3] = UPPER_BYTE(val);
 
 	cur_index += 4;
+}
+
+static void parse_macro_str(instruction &ins)
+{
+	token t1 = ins.tokens[1];
+	string str = t1.str.substr(1, t1.str.size() - 2);
+
+	for (size_t i = 0; i < str.size(); i++) {
+		stream[cur_index++] = str[i];
+	}
+}
+
+static void parse_macro_stz(instruction &ins)
+{
+	parse_macro_str(ins);
+	stream[cur_index++] = 0;
+}
+
+static void parse_macro_org(instruction &ins)
+{
+	token t1 = ins.tokens[1];
+	long val;
+	int result = parse_register_or_imm(t1.str, val);
+
+	if (result != ADMODE_IMM) {
+		cerr << "Error on line " << t1.line_no << ": Invalid imm: " << t1.str << endl;
+		n_errors++;
+		return;
+	}
+
+	cur_index = val;
 }
 
 static void inst_parse(instruction &ins)
@@ -389,6 +447,7 @@ static void inst_parse(instruction &ins)
 	default:
 		cerr << "Error on line " << t0.line_no << ": Invalid token type: " << token_types[t0.type] << endl;
 		cerr << "Expected: LABEL or OPC" << endl;
+		n_errors++;
 	}
 
 	size_t n_expected = 1;
@@ -396,6 +455,7 @@ static void inst_parse(instruction &ins)
 		if (ins.tokens.size() != 1) {
 			cerr << "Error on line " << t0.line_no << ": Expected 1 token, got " << ins.tokens.size();
 			cerr << " (label)" << endl;
+			n_errors++;
 		}
 		return;
 	}
@@ -407,6 +467,7 @@ static void inst_parse(instruction &ins)
 	if (ins.tokens.size() != n_expected) {
 		cerr << "Error on line " << t0.line_no << ": Expected " << n_expected << " tokens, got " << ins.tokens.size();
 		cerr << " (opcode: " << t0.str << ")" << endl;
+		n_errors++;
 	}
 
 	switch (ins.opcode) {
@@ -440,8 +501,14 @@ static void inst_parse(instruction &ins)
 	case INST_INT:
 		parse_inst_int(ins);
 		break;
+	case MACR_STR:
+	case MACR_ZST:
+	case MACR_ORG:
+		break;
 	default:
 		cerr << "Error on line " << t0.line_no << ": Invalid opcode: " << ins.opcode << endl;
+		n_errors++;
+		break;
 	}
 }
 
@@ -455,8 +522,8 @@ string assemble(const string &src)
 
 	ss.clear();
 
-	/* just a guess */
-	stream.resize(src.size() * 2);
+	stream.resize(0x10000);
+	static size_t max_index = 0;
 
 	for (size_t i = 0; i < lines.size(); i++) {
 		instruction ins = tokenize_line(lines[i], i + 1);
@@ -467,6 +534,7 @@ string assemble(const string &src)
 			string label = ins.tokens[0].str.substr(0, ins.tokens[0].str.size() - 1);
 			if (labels.contains(label)) {
 				cerr << "Error on line " << ins.tokens[0].line_no << ": Duplicate label: " << label << endl;
+				n_errors++;
 				continue;
 			}
 			labels[label] = cur_index;
@@ -476,9 +544,14 @@ string assemble(const string &src)
 
 		instrs.push_back(ins);
 		inst_parse(ins);
+		if (cur_index > max_index)
+			max_index = cur_index;
 	}
 
-	stream.resize(cur_index);
+	stream.resize(max_index);
+
+	if (n_errors)
+		return "";
 
 	return string(stream.begin(), stream.end());
 }

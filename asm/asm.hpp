@@ -19,5 +19,8 @@
 #define INST_CLI 0xD
 #define INST_STI 0xE
 #define INST_INT 0xF
+#define MACR_STR 0x10
+#define MACR_ZST 0x11
+#define MACR_ORG 0x12
 
 string assemble(const string &src);
