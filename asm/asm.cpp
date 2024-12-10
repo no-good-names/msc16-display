@@ -95,6 +95,10 @@ static vector<string> tokenize_line_s(const string &line)
 	for (size_t i = 0; i < line.size(); i++) {
 		char c = line[i];
 		bool quote_end = false;
+
+		if (c == '#')
+			break;
+
 		if (c == '\\' && !is_escape) {
 			is_escape = true;
 			continue;
@@ -112,9 +116,13 @@ static vector<string> tokenize_line_s(const string &line)
 			cur_token.clear();
 		} else {
 			cur_token.push_back(c);
-			is_escape = false;
 		}
+
+		is_escape = false;
 	}
+
+	if (!cur_token.empty())
+		tokens_s.push_back(cur_token);
 
 	if (quote_open) {
 		cerr << "Error: Unclosed quote" << endl;
@@ -444,6 +452,8 @@ static void inst_parse(instruction &ins)
 	case token::OPC:
 		ins.type = instruction::OPC;
 		break;
+	case token::STRING:
+		ins.type = instruction::OPC;
 	default:
 		cerr << "Error on line " << t0.line_no << ": Invalid token type: " << token_types[t0.type] << endl;
 		cerr << "Expected: LABEL or OPC" << endl;
@@ -502,8 +512,13 @@ static void inst_parse(instruction &ins)
 		parse_inst_int(ins);
 		break;
 	case MACR_STR:
+		parse_macro_str(ins);
+		break;
 	case MACR_ZST:
+		parse_macro_stz(ins);
+		break;
 	case MACR_ORG:
+		parse_macro_org(ins);
 		break;
 	default:
 		cerr << "Error on line " << t0.line_no << ": Invalid opcode: " << ins.opcode << endl;

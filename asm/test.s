@@ -1,5 +1,10 @@
 # SPDX-License-Identifier: 0BSD
 
+.zstring "This is the test program for the assembler."
+.zstring "It has no useful purpose."
+
+.org $3000
+
 init:
 	ld %a, 1
 	jnz init_end
