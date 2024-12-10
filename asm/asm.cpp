@@ -27,22 +27,12 @@ struct token {
 	} type;
 
 	string str;
-	union {
-		size_t val;
-		instruction *label;
-	};
-	size_t addr;
-	size_t line_no;
 };
 
 struct instruction {
-	enum type {
-		OPC,
-		LABEL,
-	} type;
-
 	vector<token> tokens;
 
+	size_t line_no;
 	uint16_t opcode;
 };
 
@@ -53,10 +43,6 @@ static unordered_map<string, vector<size_t> > unresolved_labels;
 static vector<unsigned char> stream;
 static size_t cur_index = 0;
 static size_t n_errors = 0;
-
-static string token_types[] = {
-	"OPC", "IMM_DEC", "IMM_HEX", "REG", "LABEL", "LABEL_REF",
-};
 
 static enum token::type get_token_type(const string &token_s)
 {
@@ -136,26 +122,13 @@ static instruction tokenize_line(const string &line, size_t line_no)
 {
 	instruction ret;
 
+	ret.line_no = line_no;
+
 	vector<string> tokens_s = tokenize_line_s(line);
 	for (const string &token_s : tokens_s) {
 		token t;
 		t.type = get_token_type(token_s);
 		t.str = token_s;
-		t.line_no = line_no;
-
-		switch (t.type) {
-		case token::IMM_DEC:
-			t.val = stoul(token_s);
-			break;
-		case token::IMM_HEX:
-			t.val = stoul(token_s.substr(1, token_s.length() - 1), nullptr, 16);
-			break;
-		case token::LABEL_REF:
-			t.label = nullptr;
-			break;
-		default:
-			break;
-		}
 
 		ret.tokens.push_back(t);
 	}
@@ -261,7 +234,7 @@ static void parse_instruction_ld(instruction &ins)
 	int opt_result = parse_register_or_imm(t2.str, opt_val);
 
 	if (opt_result == -1 || rx_result == -1) {
-		cerr << "Error on line " << t1.line_no << ": Invalid register/imm: " << t1.str << " or " << t2.str << endl;
+		cerr << "Error on line " << ins.line_no << ": Invalid register/imm: " << t1.str << " or " << t2.str << endl;
 		n_errors++;
 		return;
 	}
@@ -302,7 +275,7 @@ static void parse_instruction_st(instruction &ins)
 	int opt_result = parse_register_or_imm(t1.str, opt_val);
 
 	if (opt_result == -1 || rx_result == -1) {
-		cerr << "Error on line " << t1.line_no << ": Invalid register/imm: " << t1.str << " or " << t2.str << endl;
+		cerr << "Error on line " << ins.line_no << ": Invalid register/imm: " << t1.str << " or " << t2.str << endl;
 		n_errors++;
 		return;
 	}
@@ -335,7 +308,7 @@ static void parse_inst_push_pop(instruction &ins)
 
 	int r1_result = parse_register(t1.str);
 	if (r1_result == -1) {
-		cerr << "Error on line " << t1.line_no << ": Invalid register: " << t1.str << endl;
+		cerr << "Error on line " << ins.line_no << ": Invalid register: " << t1.str << endl;
 		n_errors++;
 		return;
 	}
@@ -355,7 +328,7 @@ static void parse_inst_jnz(instruction &ins)
 	int result = parse_register_or_imm(t1.str, val);
 
 	if (result == -1) {
-		cerr << "Error on line " << t1.line_no << ": Invalid register/imm: " << t1.str << endl;
+		cerr << "Error on line " << ins.line_no << ": Invalid register/imm: " << t1.str << endl;
 		n_errors++;
 		return;
 	}
@@ -394,7 +367,7 @@ static void parse_inst_int(instruction &ins)
 	int result = parse_register_or_imm(t1.str, val);
 
 	if (result == 4 || result == ADMODE_REG) {
-		cerr << "Error on line " << t1.line_no << ": Invalid imm: " << t1.str << endl;
+		cerr << "Error on line " << ins.line_no << ": Invalid imm: " << t1.str << endl;
 		n_errors++;
 		return;
 	}
@@ -433,7 +406,7 @@ static void parse_macro_org(instruction &ins)
 	int result = parse_register_or_imm(t1.str, val);
 
 	if (result != ADMODE_IMM) {
-		cerr << "Error on line " << t1.line_no << ": Invalid imm: " << t1.str << endl;
+		cerr << "Error on line " << ins.line_no << ": Invalid imm: " << t1.str << endl;
 		n_errors++;
 		return;
 	}
@@ -445,25 +418,11 @@ static void inst_parse(instruction &ins)
 {
 	token t0 = ins.tokens[0];
 
-	switch (t0.type) {
-	case token::LABEL:
-		ins.type = instruction::LABEL;
-		break;
-	case token::OPC:
-		ins.type = instruction::OPC;
-		break;
-	case token::STRING:
-		ins.type = instruction::OPC;
-	default:
-		cerr << "Error on line " << t0.line_no << ": Invalid token type: " << token_types[t0.type] << endl;
-		cerr << "Expected: LABEL or OPC" << endl;
-		n_errors++;
-	}
-
 	size_t n_expected = 1;
-	if (ins.type == instruction::LABEL) {
+
+	if (t0.type == token::LABEL) {
 		if (ins.tokens.size() != 1) {
-			cerr << "Error on line " << t0.line_no << ": Expected 1 token, got " << ins.tokens.size();
+			cerr << "Error on line " << ins.line_no << ": Expected 1 token, got " << ins.tokens.size();
 			cerr << " (label)" << endl;
 			n_errors++;
 		}
@@ -475,7 +434,7 @@ static void inst_parse(instruction &ins)
 	n_expected += kw->n_args;
 
 	if (ins.tokens.size() != n_expected) {
-		cerr << "Error on line " << t0.line_no << ": Expected " << n_expected << " tokens, got " << ins.tokens.size();
+		cerr << "Error on line " << ins.line_no << ": Expected " << n_expected << " tokens, got " << ins.tokens.size();
 		cerr << " (opcode: " << t0.str << ")" << endl;
 		n_errors++;
 	}
@@ -521,7 +480,7 @@ static void inst_parse(instruction &ins)
 		parse_macro_org(ins);
 		break;
 	default:
-		cerr << "Error on line " << t0.line_no << ": Invalid opcode: " << ins.opcode << endl;
+		cerr << "Error on line " << ins.line_no << ": Invalid opcode: " << ins.opcode << endl;
 		n_errors++;
 		break;
 	}
@@ -548,7 +507,7 @@ string assemble(const string &src)
 		if (ins.tokens[0].type == token::LABEL) {
 			string label = ins.tokens[0].str.substr(0, ins.tokens[0].str.size() - 1);
 			if (labels.contains(label)) {
-				cerr << "Error on line " << ins.tokens[0].line_no << ": Duplicate label: " << label << endl;
+				cerr << "Error on line " << ins.line_no << ": Duplicate label: " << label << endl;
 				n_errors++;
 				continue;
 			}
