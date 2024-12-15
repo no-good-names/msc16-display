@@ -1,17 +1,10 @@
 CFLAGS := -MMD -g
 CXXFLAGS := $(CFLAGS) -std=c++23
-LDFLAGS := -lm -lglm -lglfw
+LDFLAGS := -lm
 
 CFLAGS += -std=gnu99
 
 INCLUDE_DIRS := -Iinclude
-
-ifeq ($(shell uname),Darwin)
-	INCLUDE_DIRS += -I/opt/homebrew/include
-	LDFLAGS += -L/opt/homebrew/lib -framework Cocoa -framework IOKit -framework OpenGL
-else
-	LDFLAGS += -lOpenGL
-endif
 
 CFLAGS += $(INCLUDE_DIRS)
 CXXFLAGS += $(INCLUDE_DIRS)
