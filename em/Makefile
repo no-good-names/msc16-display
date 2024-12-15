@@ -20,6 +20,9 @@ TARGET := em.bin
 
 all: $(TARGET)
 
+../asm/out.bin:
+	$(MAKE) -C ../asm run
+
 $(TARGET): $(OBJ)
 	@echo "  LD     $@"
 	@$(CC) -o $@ $^ $(LDFLAGS)
@@ -33,7 +36,7 @@ clean:
 	rm -f $(TARGET) $(OBJ) $(DEP)
 
 .PHONY: run
-run: $(TARGET)
+run: $(TARGET) ../asm/out.bin
 	./$(TARGET)
 
 -include $(DEP)
