@@ -395,6 +395,7 @@ static void parse_macro_org(instruction &ins)
 static void inst_parse(instruction &ins)
 {
 	token t0 = ins.tokens[0];
+	static bool macro_mode = false;
 
 	size_t n_expected = 1;
 
@@ -420,6 +421,13 @@ static void inst_parse(instruction &ins)
 		cerr << "Error on line " << ins.line_no << ": Expected " << n_expected << " tokens, got " << ins.tokens.size();
 		cerr << " (opcode: " << t0.str << ")" << endl;
 		n_errors++;
+	}
+
+	if (macro_mode) {
+		if (ins.opcode == MACR_END)
+			macro_mode = false;
+		else
+			return;
 	}
 
 	switch (ins.opcode) {
@@ -463,6 +471,8 @@ static void inst_parse(instruction &ins)
 		parse_macro_org(ins);
 		break;
 	case MACR_DEF:
+		macro_mode = true;
+		break;
 	case MACR_END:
 		break;
 	default:
