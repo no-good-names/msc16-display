@@ -1,6 +1,6 @@
 # MSC-16: Michael's Super-Awesome Computer
 
-A simple 16-bit architecture, with an emulator
+A simple 16-bit architecture, with an emulator AND assembler(new!)
 
 ## Motivation
 
