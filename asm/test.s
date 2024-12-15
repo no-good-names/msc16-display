@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: 0BSD
 
-.zstring "This is the test program for the assembler."
-.zstring "It has no useful purpose."
+.macro TESTMACRO
+	.zstring "This is a test macro"
+.endm
 
-.org $3000
-
+.org $100
 init:
 	ld %a, 1
 	jnz init_end
@@ -21,4 +21,4 @@ init_end:
 	ld %a, 1
 	jnz init_mid
 
-	
+TESTMACRO

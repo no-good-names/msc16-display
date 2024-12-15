@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
+#ifndef _HASH_H_
+#define _HASH_H_
+
 #include <stdlib.h>
-#ifndef _ASM_H_
-#define _ASM_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,4 +27,4 @@ struct keyword *asm_keyword_lookup(const char *str, size_t len);
 }
 #endif
 
-#endif /* _ASM_H_ */
+#endif /* _HASH_H_ */

@@ -22,5 +22,37 @@
 #define MACR_STR 0x10
 #define MACR_ZST 0x11
 #define MACR_ORG 0x12
+#define MACR_DEF 0x13
+#define MACR_END 0x14
 
+struct token {
+	enum type {
+		OPC,
+		IMM_DEC,
+		IMM_HEX,
+		REG,
+		LABEL,
+		LABEL_REF,
+		STRING,
+	} type;
+
+	string str;
+};
+
+struct instruction {
+	vector<token> tokens;
+
+	uint16_t opcode;
+
+	size_t line_no;
+};
+
+struct line {
+	string line;
+	size_t line_no;
+};
+
+enum token::type get_token_type(const string &token_s);
+instruction tokenize_line(line &line, size_t line_no);
 string assemble(const string &src);
+int preprocess(vector<line> &lines);

@@ -14,28 +14,6 @@
 		stream[index + 1] = UPPER_BYTE(x); \
 	} while (0)
 
-struct instruction;
-struct token {
-	enum type {
-		OPC,
-		IMM_DEC,
-		IMM_HEX,
-		REG,
-		LABEL,
-		LABEL_REF,
-		STRING,
-	} type;
-
-	string str;
-};
-
-struct instruction {
-	vector<token> tokens;
-
-	size_t line_no;
-	uint16_t opcode;
-};
-
 static vector<instruction> instrs;
 static unordered_map<string, size_t> labels;
 static unordered_map<string, vector<size_t> > unresolved_labels;
@@ -44,7 +22,7 @@ static vector<unsigned char> stream;
 static size_t cur_index = 0;
 static size_t n_errors = 0;
 
-static enum token::type get_token_type(const string &token_s)
+enum token::type get_token_type(const string &token_s)
 {
 	if (token_s[0] == '%')
 		return token::REG;
@@ -118,13 +96,13 @@ static vector<string> tokenize_line_s(const string &line)
 	return tokens_s;
 }
 
-static instruction tokenize_line(const string &line, size_t line_no)
+instruction tokenize_line(line &line, size_t line_no)
 {
 	instruction ret;
 
 	ret.line_no = line_no;
 
-	vector<string> tokens_s = tokenize_line_s(line);
+	vector<string> tokens_s = tokenize_line_s(line.line);
 	for (const string &token_s : tokens_s) {
 		token t;
 		t.type = get_token_type(token_s);
@@ -430,10 +408,15 @@ static void inst_parse(instruction &ins)
 	}
 
 	struct keyword *kw = asm_keyword_lookup(t0.str.c_str(), t0.str.size());
+	if (!kw) {
+		cerr << "Error on line " << ins.line_no << ": Invalid opcode: " << t0.str << endl;
+		n_errors++;
+		return;
+	}
 	ins.opcode = kw->opc;
 	n_expected += kw->n_args;
 
-	if (ins.tokens.size() != n_expected) {
+	if (ins.tokens.size() != n_expected && kw->n_args != -1) {
 		cerr << "Error on line " << ins.line_no << ": Expected " << n_expected << " tokens, got " << ins.tokens.size();
 		cerr << " (opcode: " << t0.str << ")" << endl;
 		n_errors++;
@@ -479,6 +462,9 @@ static void inst_parse(instruction &ins)
 	case MACR_ORG:
 		parse_macro_org(ins);
 		break;
+	case MACR_DEF:
+	case MACR_END:
+		break;
 	default:
 		cerr << "Error on line " << ins.line_no << ": Invalid opcode: " << ins.opcode << endl;
 		n_errors++;
@@ -488,16 +474,25 @@ static void inst_parse(instruction &ins)
 
 string assemble(const string &src)
 {
-	vector<string> lines;
+	vector<line> lines;
 	stringstream ss(src);
 
-	for (string line; getline(ss, line);)
-		lines.push_back(line);
+	string line;
+	for (size_t i = 1; getline(ss, line); i++) {
+		lines.push_back({ line, i });
+	}
 
 	ss.clear();
 
 	stream.resize(0x10000);
 	static size_t max_index = 0;
+
+	if (preprocess(lines))
+		return "";
+
+	for (int i = 0; i < lines.size(); i++) {
+		cout << lines[i].line << endl;
+	}
 
 	for (size_t i = 0; i < lines.size(); i++) {
 		instruction ins = tokenize_line(lines[i], i + 1);

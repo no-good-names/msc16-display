@@ -19,3 +19,5 @@ int,  	  0xf,  1
 .string,  0x10, 1
 .zstring, 0x11, 1
 .org,	  0x12, 1
+.macro,   0x13, -1
+.endm,    0x14, 0
