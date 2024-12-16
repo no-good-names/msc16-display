@@ -13,6 +13,7 @@ CSRC := $(shell find . -type f -name '*.c')
 CXXSRC := $(shell find . -type f -name '*.cpp')
 OBJ := $(CXXSRC:.cpp=.o) $(CSRC:.c=.o)
 DEP := $(OBJ:.o=.d)
+TEST = ./test.s
 
 TARGET := asm_image
 
@@ -41,7 +42,7 @@ clean:
 
 .PHONY: run
 run: $(TARGET)
-	./$(TARGET) -c test.s
+	./$(TARGET) -c ./$(TEST)
 
 -include $(DEP)
 $(OBJ): Makefile

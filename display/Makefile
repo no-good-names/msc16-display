@@ -1,5 +1,7 @@
+$(CC) = gcc
+
 CFLAGS := -MMD -std=gnu99 -O2 -g
-LDFLAGS := -lm
+LDFLAGS := -lm -lSDL2
 
 INCLUDE_DIRS := -Iinclude
 
@@ -8,14 +10,10 @@ CFLAGS += $(INCLUDE_DIRS)
 CSRC := $(shell find . -type f -name '*.c')
 OBJ := $(CSRC:.c=.o)
 DEP := $(OBJ:.o=.d)
-TEST = ../asm/test.s
 
-TARGET := em.bin
+TARGET := display
 
 all: $(TARGET)
-
-../asm/out.bin:
-	$(MAKE) -C TEST=$(TEST) ../asm run
 
 $(TARGET): $(OBJ)
 	@echo "  LD     $@"
@@ -30,12 +28,6 @@ clean:
 	rm -f $(TARGET) $(OBJ) $(DEP)
 
 .PHONY: run
-run: $(TARGET) ../asm/out.bin
+run: $(TARGET)
 	./$(TARGET)
-
--include $(DEP)
-$(OBJ): Makefile
-
-print-%:
-	@echo $* = $($*)
 

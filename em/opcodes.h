@@ -53,6 +53,7 @@ typedef struct cpu {
 	u16 ip;
 	u16 flags;
 
+    // 65536
 	u8 memory[0x10000];
 } cpu_t;
 
